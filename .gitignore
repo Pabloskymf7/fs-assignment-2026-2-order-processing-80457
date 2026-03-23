@@ -1,0 +1,10 @@
+﻿# Visual Studio basura
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+
+# Logs de Serilog
+**/Logs/
+*.log
