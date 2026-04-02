@@ -1,7 +1,34 @@
-using PaymentService;
+using MassTransit;
+using PaymentService.Consumers;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/payment-.log", rollingInterval: RollingInterval.Day)
+    .Enrich.WithProperty("ServiceName", "PaymentService")
+    .CreateLogger();
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
+builder.Services.AddSerilog();
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<InventoryConfirmedConsumer>();
+
+    x.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:User"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+
+        cfg.ConfigureEndpoints(ctx);
+    });
+});
 
 var host = builder.Build();
-host.Run();
+
+Log.Information("PaymentService starting...");
+
+await host.RunAsync();
