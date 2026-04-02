@@ -1,26 +1,27 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using CustomerPortal.Services;
 
-namespace CustomerPortal
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+
+builder.Services.AddHttpClient<OrderApiService>(client =>
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
+    client.BaseAddress = new Uri(
+        builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5250/");
+});
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
-    }
-}
+builder.Services.AddScoped<CartService>();
+
+var app = builder.Build();
+
+app.UseStaticFiles();
+app.UseRouting();
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
+
+app.Run();
+
