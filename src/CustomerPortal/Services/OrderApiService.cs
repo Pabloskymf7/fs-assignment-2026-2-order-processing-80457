@@ -16,6 +16,11 @@ public class OrderApiService
         _http = http;
     }
 
+    public async Task<List<ProductDto>> GetProductsAsync()
+    {
+        return await _http.GetFromJsonAsync<List<ProductDto>>("api/Products") ?? new();
+    }
+
     public async Task<List<OrderDto>> GetOrdersAsync()
     {
         return await _http.GetFromJsonAsync<List<OrderDto>>("api/Orders") ?? new();
