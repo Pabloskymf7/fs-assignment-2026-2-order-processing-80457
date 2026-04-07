@@ -1,0 +1,76 @@
+@page
+@model SportsStore.Pages.CheckoutModel
+
+<h2>Checkout</h2>
+
+@if (Model.OrderPlaced)
+{
+    <div class="alert alert-success">
+        <h3>Order placed successfully!</h3>
+        <p>Order ID: <strong>@Model.OrderId</strong></p>
+        <p>Your order is being processed. You can track it below.</p>
+        <a class="btn btn-primary" asp-page="OrderStatus" asp-route-orderId="@Model.OrderId">Track Order</a>
+        <a class="btn btn-secondary" href="/">Continue Shopping</a>
+    </div>
+}
+else if (Model.OrderFailed)
+{
+    <div class="alert alert-danger">
+        <h3>Order failed</h3>
+        <p>Something went wrong. Please try again.</p>
+    </div>
+}
+else
+{
+    <form method="post">
+        <div asp-validation-summary="All" class="text-danger"></div>
+
+        <h4>Shipping Details</h4>
+        <div class="form-group">
+            <label>Name</label>
+            <input class="form-control" asp-for="Name" />
+        </div>
+        <div class="form-group">
+            <label>Address Line 1</label>
+            <input class="form-control" asp-for="Line1" />
+        </div>
+        <div class="form-group">
+            <label>City</label>
+            <input class="form-control" asp-for="City" />
+        </div>
+        <div class="form-group">
+            <label>Country</label>
+            <input class="form-control" asp-for="Country" />
+        </div>
+
+        <h4>Order Summary</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var line in Model.Cart?.Lines ?? Enumerable.Empty<SportsStore.Models.CartLine>())
+                {
+                    <tr>
+                        <td>@line.Product.Name</td>
+                        <td>@line.Quantity</td>
+                        <td>@line.Product.Price.ToString("c")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="text-right"><strong>Total:</strong></td>
+                    <td><strong>@Model.Cart?.ComputeTotalValue().ToString("c")</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <button type="submit" class="btn btn-primary">Place Order</button>
+        <a class="btn btn-secondary" asp-page="Cart">Back to Cart</a>
+    </form>
+}
