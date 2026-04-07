@@ -1,7 +1,66 @@
-﻿@page "/"
+@page "/"
+@using global::Shared.DTOs
+@inject OrderApiService OrderApi
+@inject CartService Cart
 
-<h1>Hello, world!</h1>
+<h2>SportsStore - Products</h2>
 
-Welcome to your new app.
+@if (_loading)
+{
+    <p>Loading products...</p>
+}
+else
+{
+    <div style="display:flex; flex-wrap:wrap; gap:20px; margin-top:20px;">
+        @foreach (var product in _products)
+        {
+            <div style="border:1px solid #ccc; border-radius:8px; padding:16px; width:220px;">
+                <h4>@product.Name</h4>
+                <p style="color:gray;">@product.Description</p>
+                <p><strong>@product.Price.ToString("C")</strong></p>
+                <input type="number" min="1" max="10"
+                       @bind="_quantities[product.Id]"
+                       style="width:60px; margin-right:8px;" />
+                <button @onclick="() => AddToCart(product)">Add to Cart</button>
+            </div>
+        }
+    </div>
+}
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@if (_added)
+{
+    <p style="color:green; margin-top:10px;">Item added to cart!</p>
+}
+
+@code {
+    private List<ProductDto> _products = new();
+    private Dictionary<int, int> _quantities = new();
+    private bool _loading = true;
+    private bool _added = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _products = await OrderApi.GetProductsAsync();
+        foreach (var p in _products)
+            _quantities[p.Id] = 1;
+        _loading = false;
+    }
+
+    private void AddToCart(ProductDto p)
+    {
+        Cart.AddItem(new CartItemDto
+        {
+            ProductId = p.Id,
+            ProductName = p.Name,
+            Quantity = _quantities[p.Id],
+            UnitPrice = p.Price
+        });
+        _added = true;
+        StateHasChanged();
+        Task.Delay(2000).ContinueWith(_ =>
+        {
+            _added = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+}

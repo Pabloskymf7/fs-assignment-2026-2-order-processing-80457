@@ -1,0 +1,69 @@
+@page "/track/{OrderId}"
+@using global::Shared.DTOs
+@inject OrderApiService OrderApi
+
+<h2>Order Tracking</h2>
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_order is null)
+{
+    <p>Order not found.</p>
+}
+else
+{
+    <div style="max-width:600px;">
+        <p><strong>Order ID:</strong> @_order.Id</p>
+        <p><strong>Status:</strong>
+            <span style="padding:4px 8px; border-radius:4px; background:@GetStatusColor(_order.Status); color:white;">
+                @_order.Status
+            </span>
+        </p>
+        <p><strong>Total:</strong> @_order.TotalAmount</p>
+        <p><strong>Date:</strong> @_order.CreatedAt.ToShortDateString()</p>
+
+        @if (_order.TrackingReference is not null)
+        {
+            <p><strong>Tracking Ref:</strong> @_order.TrackingReference</p>
+            <p><strong>Estimated Dispatch:</strong> @_order.EstimatedDispatch?.ToShortDateString()</p>
+        }
+
+        @if (_order.FailureReason is not null)
+        {
+            <p style="color:red;"><strong>Failure Reason:</strong> @_order.FailureReason</p>
+        }
+
+        <h4>Items:</h4>
+        <ul>
+            @foreach (var item in _order.Items)
+            {
+                <li>@item.ProductName x@item.Quantity - @item.UnitPrice each</li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter] public string OrderId { get; set; } = string.Empty;
+
+    private OrderDto? _order;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(OrderId, out var id))
+            _order = await OrderApi.GetOrderAsync(id);
+        _loading = false;
+    }
+
+    private string GetStatusColor(string status) => status switch
+    {
+        "Completed" => "#4caf50",
+        "PaymentFailed" or "InventoryFailed" or "Failed" => "#f44336",
+        "ShippingCreated" => "#2196f3",
+        _ => "#ff9800"
+    };
+}
+
