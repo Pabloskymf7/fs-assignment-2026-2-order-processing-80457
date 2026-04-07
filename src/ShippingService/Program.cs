@@ -4,8 +4,9 @@ using ShippingService.Consumers;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("Logs/shipping-.log", rollingInterval: RollingInterval.Day)
-    .Enrich.WithProperty("ServiceName", "ShippingService")
+    .WriteTo.File("Logs/orderapi-.log", rollingInterval: RollingInterval.Day)
+    .Enrich.WithProperty("ServiceName", "OrderManagement.API")
+    .Enrich.WithCorrelationId()
     .CreateLogger();
 
 var builder = Host.CreateApplicationBuilder(args);

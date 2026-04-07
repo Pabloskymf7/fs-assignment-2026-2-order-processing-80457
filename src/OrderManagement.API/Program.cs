@@ -9,6 +9,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("Logs/orderapi-.log", rollingInterval: RollingInterval.Day)
     .Enrich.WithProperty("ServiceName", "OrderManagement.API")
+    .Enrich.WithCorrelationId()
     .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);

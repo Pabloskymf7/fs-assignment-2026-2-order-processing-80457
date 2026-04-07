@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
 	public DbSet<ShipmentRecord> ShipmentRecords => Set<ShipmentRecord>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<InventoryRecord> InventoryRecords => Set<InventoryRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -45,3 +46,5 @@ public class AppDbContext : DbContext
 		});
 	}
 }
+
+
