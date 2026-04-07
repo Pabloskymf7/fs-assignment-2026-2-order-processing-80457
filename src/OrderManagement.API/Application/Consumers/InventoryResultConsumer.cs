@@ -29,7 +29,7 @@ public class InventoryResultConsumer :
     public async Task Consume(ConsumeContext<InventoryConfirmed> context)
     {
         _logger.LogInformation(
-            "Inventory confirmed for order {OrderId}", context.Message.OrderId);
+            "Inventory confirmed for order {OrderId} {EventType}" , context.Message.OrderId, "InventoryConfirmed", context.Message.OrderId);
 
         await _mediator.Send(new UpdateOrderStatusCommand(
             context.Message.OrderId,
@@ -66,3 +66,4 @@ public class InventoryResultConsumer :
         await db.SaveChangesAsync();
     }
 }
+

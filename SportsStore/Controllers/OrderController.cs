@@ -1,10 +1,11 @@
 ﻿using MassTransit;
+using MassTransit.Mediator;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Shared.Messages;
-using Stripe;
 using SportsStore.Models;
 using SportsStore.Models.ViewModels;
+using Stripe;
 
 namespace SportsStore.Controllers
 {

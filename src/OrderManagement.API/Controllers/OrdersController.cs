@@ -61,4 +61,18 @@ public class OrdersController : ControllerBase
         var orders = await _mediator.Send(new GetOrdersByStatusQuery(orderStatus));
         return Ok(orders);
     }
+
+    [HttpGet("dashboard/summary")]
+    public async Task<IActionResult> GetDashboardSummary()
+    {
+        var summary = await _mediator.Send(new GetDashboardSummaryQuery());
+        return Ok(summary);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Cancel(Guid id)
+    {
+        var result = await _mediator.Send(new CancelOrderCommand(id));
+        return result ? Ok() : BadRequest("Cannot cancel this order");
+    }
 }

@@ -1,0 +1,51 @@
+@page
+@model SportsStore.Pages.MyOrdersModel
+
+<h2>My Orders</h2>
+
+@if (Model.Loading)
+{
+    <p>Loading orders...</p>
+}
+else if (!Model.Orders.Any())
+{
+    <p>No orders found.</p>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Tracking</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model.Orders)
+            {
+                <tr>
+                    <td>@order.Id.ToString().Substring(0, 8)...</td>
+                    <td>@order.CreatedAt.ToShortDateString()</td>
+                    <td>@order.TotalAmount.ToString("c")</td>
+                    <td>
+                        <span class="badge" style="background:@Model.GetStatusColor(order.Status); color:white; padding:4px 8px;">
+                            @order.Status
+                        </span>
+                    </td>
+                    <td>@(order.TrackingReference ?? "-")</td>
+                    <td>
+                        <a class="btn btn-sm btn-primary" asp-page="OrderStatus" asp-route-orderId="@order.Id">
+                            Track
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<a class="btn btn-secondary" href="/">Continue Shopping</a>
