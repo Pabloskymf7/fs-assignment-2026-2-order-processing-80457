@@ -39,9 +39,7 @@ namespace SportsStore.Pages
         [Required(ErrorMessage = "Please enter your country")]
         public string Country { get; set; } = string.Empty;
 
-        public bool OrderPlaced { get; set; } = false;
         public bool OrderFailed { get; set; } = false;
-        public Guid? OrderId { get; set; }
 
         public void OnGet() { }
 
@@ -59,7 +57,7 @@ namespace SportsStore.Pages
 
                 var request = new CheckoutRequest
                 {
-                    CustomerId = Guid.NewGuid(), // En producción vendría del usuario autenticado
+                    CustomerId = Guid.NewGuid(),
                     Items = _cart.Lines.Select(l => new CartItemDto
                     {
                         ProductId = (int)l.Product.ProductID!,
@@ -74,23 +72,22 @@ namespace SportsStore.Pages
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<CheckoutResult>();
-                    OrderId = result?.OrderId;
-                    OrderPlaced = true;
                     _cart.Clear();
-
                     _logger.LogInformation(
-                        "Order placed successfully via OrderManagement.API: {OrderId}", OrderId);
+                        "Order placed successfully via OrderManagement.API: {OrderId} {EventType}",
+                        result?.OrderId, "OrderPlaced");
+                    return RedirectToPage("/OrderConfirmation", new { orderId = result?.OrderId });
                 }
                 else
                 {
                     OrderFailed = true;
-                    _logger.LogWarning("Order placement failed with status {Status}",
-                        response.StatusCode);
+                    _logger.LogWarning("Order placement failed with status {Status} {EventType}",
+                        response.StatusCode, "OrderFailed");
                 }
             }
             catch (Exception ex)
             {
-                OrderFailed = true;
+                ModelState.AddModelError("", "Error placing order. Please try again.");
                 _logger.LogError(ex, "Error placing order");
             }
 
