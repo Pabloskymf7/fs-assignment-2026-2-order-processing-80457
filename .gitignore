@@ -8,3 +8,10 @@
 # Logs de Serilog
 **/Logs/
 *.log
+src/OrderManagement.API/orders.db
+
+src/OrderManagement.API/orders.db-shm
+
+src/OrderManagement.API/orders.db-wal
+
+src/admin-dashboard/node_modules

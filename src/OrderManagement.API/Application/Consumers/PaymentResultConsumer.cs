@@ -6,15 +6,12 @@ using Shared.Messages;
 
 namespace OrderManagement.API.Application.Consumers;
 
-public class PaymentResultConsumer :
-    IConsumer<PaymentApproved>,
-    IConsumer<PaymentRejected>
+public class PaymentApprovedConsumer : IConsumer<PaymentApproved>
 {
     private readonly IMediator _mediator;
-    private readonly ILogger<PaymentResultConsumer> _logger;
+    private readonly ILogger<PaymentApprovedConsumer> _logger;
 
-    public PaymentResultConsumer(IMediator mediator,
-        ILogger<PaymentResultConsumer> logger)
+    public PaymentApprovedConsumer(IMediator mediator, ILogger<PaymentApprovedConsumer> logger)
     {
         _mediator = mediator;
         _logger = logger;
@@ -22,19 +19,31 @@ public class PaymentResultConsumer :
 
     public async Task Consume(ConsumeContext<PaymentApproved> context)
     {
-        _logger.LogInformation("Payment approved for order {OrderId}, transaction {TxId}",
-            context.Message.OrderId, context.Message.TransactionId);
+        _logger.LogInformation("Payment approved for order {OrderId} transaction {TxId} {EventType}",
+            context.Message.OrderId, context.Message.TransactionId, "PaymentApproved");
 
         await _mediator.Send(new UpdateOrderStatusCommand(
             context.Message.OrderId,
             OrderStatus.PaymentApproved,
             TransactionId: context.Message.TransactionId));
     }
+}
+
+public class PaymentRejectedConsumer : IConsumer<PaymentRejected>
+{
+    private readonly IMediator _mediator;
+    private readonly ILogger<PaymentRejectedConsumer> _logger;
+
+    public PaymentRejectedConsumer(IMediator mediator, ILogger<PaymentRejectedConsumer> logger)
+    {
+        _mediator = mediator;
+        _logger = logger;
+    }
 
     public async Task Consume(ConsumeContext<PaymentRejected> context)
     {
-        _logger.LogWarning("Payment rejected for order {OrderId}: {Reason}",
-            context.Message.OrderId, context.Message.Reason);
+        _logger.LogWarning("Payment rejected for order {OrderId}: {Reason} {EventType}",
+            context.Message.OrderId, context.Message.Reason, "PaymentRejected");
 
         await _mediator.Send(new UpdateOrderStatusCommand(
             context.Message.OrderId,

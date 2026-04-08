@@ -44,3 +44,12 @@ public class ShipmentRecord
     public DateTime EstimatedDispatch { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+
+public class InventoryRecord
+{
+    public int Id { get; set; }
+    public Guid OrderId { get; set; }
+    public bool Confirmed { get; set; }
+    public string? Reason { get; set; }
+    public DateTime ProcessedAt { get; set; } = DateTime.UtcNow;
+}

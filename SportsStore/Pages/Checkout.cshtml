@@ -1,0 +1,64 @@
+@page
+@model SportsStore.Pages.CheckoutModel
+
+<h2>Checkout</h2>
+
+@if (Model.OrderFailed)
+{
+    <div class="alert alert-danger">
+        <h3>Order failed</h3>
+        <p>Something went wrong. Please try again.</p>
+    </div>
+}
+
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <h4>Shipping Details</h4>
+    <div class="form-group mb-2">
+        <label>Name</label>
+        <input class="form-control" asp-for="Name" />
+    </div>
+    <div class="form-group mb-2">
+        <label>Address Line 1</label>
+        <input class="form-control" asp-for="Line1" />
+    </div>
+    <div class="form-group mb-2">
+        <label>City</label>
+        <input class="form-control" asp-for="City" />
+    </div>
+    <div class="form-group mb-2">
+        <label>Country</label>
+        <input class="form-control" asp-for="Country" />
+    </div>
+
+    <h4>Order Summary</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Model.Cart?.Lines ?? Enumerable.Empty<SportsStore.Models.CartLine>())
+            {
+                <tr>
+                    <td>@line.Product.Name</td>
+                    <td>@line.Quantity</td>
+                    <td>@line.Product.Price.ToString("c")</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" class="text-right"><strong>Total:</strong></td>
+                <td><strong>@Model.Cart?.ComputeTotalValue().ToString("c")</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <button type="submit" class="btn btn-primary">Place Order</button>
+    <a class="btn btn-secondary ms-2" asp-page="Cart">Back to Cart</a>
+</form>

@@ -9,6 +9,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("Logs/orderapi-.log", rollingInterval: RollingInterval.Day)
     .Enrich.WithProperty("ServiceName", "OrderManagement.API")
+    .Enrich.WithCorrelationId()
     .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,8 +26,10 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<InventoryResultConsumer>();
-    x.AddConsumer<PaymentResultConsumer>();
-    x.AddConsumer<ShippingResultConsumer>();
+    x.AddConsumer<PaymentApprovedConsumer>();
+    x.AddConsumer<PaymentRejectedConsumer>();
+    x.AddConsumer<ShippingCreatedConsumer>();
+    x.AddConsumer<ShippingFailedConsumer>();
 
     x.UsingRabbitMq((ctx, cfg) =>
     {
@@ -52,7 +55,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    db.Database.EnsureDeleted();
+    db.Database.EnsureCreated();
 
     if (!db.Products.Any())
     {
@@ -77,3 +81,5 @@ app.UseSwaggerUI();
 app.MapControllers();
 
 app.Run();
+
+
