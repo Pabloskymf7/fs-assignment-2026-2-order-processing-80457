@@ -26,8 +26,10 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<InventoryResultConsumer>();
-    x.AddConsumer<PaymentResultConsumer>();
-    x.AddConsumer<ShippingResultConsumer>();
+    x.AddConsumer<PaymentApprovedConsumer>();
+    x.AddConsumer<PaymentRejectedConsumer>();
+    x.AddConsumer<ShippingCreatedConsumer>();
+    x.AddConsumer<ShippingFailedConsumer>();
 
     x.UsingRabbitMq((ctx, cfg) =>
     {
@@ -79,3 +81,5 @@ app.UseSwaggerUI();
 app.MapControllers();
 
 app.Run();
+
+
