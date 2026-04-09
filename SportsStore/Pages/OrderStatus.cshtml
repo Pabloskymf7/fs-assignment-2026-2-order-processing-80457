@@ -1,0 +1,65 @@
+@page "{orderId}"
+@model SportsStore.Pages.OrderStatusModel
+
+<h2>Order Status</h2>
+
+@if (Model.Loading)
+{
+    <p>Loading order status...</p>
+}
+else if (Model.Order == null)
+{
+    <p class="alert alert-danger">Order not found.</p>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <h5>Order ID: @Model.Order.Id</h5>
+            <p>
+                <strong>Status:</strong>
+                <span class="badge" style="background:@Model.GetStatusColor(Model.Order.Status)">
+                    @Model.Order.Status
+                </span>
+            </p>
+            <p><strong>Total:</strong> @Model.Order.TotalAmount.ToString("c")</p>
+            <p><strong>Date:</strong> @Model.Order.CreatedAt.ToShortDateString()</p>
+
+            @if (Model.Order.TrackingReference != null)
+            {
+                <p><strong>Tracking Reference:</strong> @Model.Order.TrackingReference</p>
+                <p><strong>Estimated Dispatch:</strong> @Model.Order.EstimatedDispatch?.ToShortDateString()</p>
+            }
+
+            @if (Model.Order.FailureReason != null)
+            {
+                <div class="alert alert-danger">
+                    <strong>Failure Reason:</strong> @Model.Order.FailureReason
+                </div>
+            }
+
+            <h5>Items</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Order.Items)
+                    {
+                        <tr>
+                            <td>@item.ProductName</td>
+                            <td>@item.Quantity</td>
+                            <td>@item.UnitPrice.ToString("c")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<a class="btn btn-primary" href="/">Continue Shopping</a>

@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MassTransit;
+using MassTransit.Mediator;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Stripe;
+using Shared.Messages;
 using SportsStore.Models;
 using SportsStore.Models.ViewModels;
+using Stripe;
 
 namespace SportsStore.Controllers
 {
@@ -13,16 +16,22 @@ namespace SportsStore.Controllers
         private readonly ILogger<OrderController> _logger;
         private readonly IPaymentService _paymentService;
         private readonly string _publishableKey;
+        private readonly IPublishEndpoint _bus;
 
-        public OrderController(IOrderRepository repoService, Cart cartService,
-            ILogger<OrderController> logger, IPaymentService paymentService,
-            IOptions<SportsStore.Models.StripeSettings> stripeSettings)
+        public OrderController(
+            IOrderRepository repoService,
+            Cart cartService,
+            ILogger<OrderController> logger,
+            IPaymentService paymentService,
+            IOptions<SportsStore.Models.StripeSettings> stripeSettings,
+            IPublishEndpoint bus)
         {
             repository = repoService;
             cart = cartService;
             _logger = logger;
             _paymentService = paymentService;
             _publishableKey = stripeSettings.Value.PublishableKey;
+            _bus = bus;
         }
 
         public ViewResult Checkout() => View(new Order());
@@ -64,7 +73,7 @@ namespace SportsStore.Controllers
         }
 
         [HttpGet]
-        public IActionResult ConfirmPayment(string paymentIntentId)
+        public async Task<IActionResult> ConfirmPayment(string paymentIntentId)
         {
             try
             {
@@ -80,13 +89,30 @@ namespace SportsStore.Controllers
                         order.PaymentStatus = "Paid";
                         repository.SaveOrder(order);
                         cart.Clear();
-                        _logger.LogInformation("Order created: {OrderId} for {CustomerName}, Payment: {PaymentIntentId}",
+
+                        _logger.LogInformation(
+                            "Order created: {OrderId} for {CustomerName}, Payment: {PaymentIntentId}",
                             order.OrderID, order.Name, paymentIntentId);
-                        foreach (var line in order.Lines)
-                        {
-                            _logger.LogInformation("Order {OrderId} contains product: {ProductId} {ProductName} Quantity: {Quantity} Price: {Price}",
-                                order.OrderID, line.Product.ProductID, line.Product.Name, line.Quantity, line.Product.Price);
-                        }
+
+                        // Publicar evento a RabbitMQ
+                        var items = order.Lines.Select(l => new OrderItemMessage(
+                            (int)l.Product.ProductID!,
+                            l.Product.Name,
+                            l.Quantity,
+                            l.Product.Price
+                        )).ToList();
+
+                        await _bus.Publish(new OrderSubmitted(
+                            Guid.NewGuid(),
+                            Guid.NewGuid(), // CustomerId — en el futuro vendría del usuario autenticado
+                            items,
+                            order.Lines.Sum(l => l.Product.Price * l.Quantity),
+                            DateTime.UtcNow
+                        ));
+
+                        _logger.LogInformation(
+                            "OrderSubmitted event published for order {OrderId}", order.OrderID);
+
                         return RedirectToPage("/Completed", new { orderId = order.OrderID });
                     }
                 }

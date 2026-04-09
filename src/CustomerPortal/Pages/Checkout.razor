@@ -1,0 +1,74 @@
+@page "/checkout"
+@inject CartService Cart
+@inject OrderApiService OrderApi
+@inject NavigationManager Nav
+
+<h2>💳 Checkout</h2>
+
+@if (_loading)
+{
+    <p>Processing your order...</p>
+}
+else if (_orderId.HasValue)
+{
+    < div style = "background:#e8f5e9; padding:20px; border-radius:8px;" >
+        < h3 >✅ Order placed successfully! </ h3 >
+        < p > Order ID: < strong > @_orderId </ strong ></ p >
+        < a href = "/orders" > View my orders</ a >
+    </ div >
+}
+else if (_error)
+{
+    < p style = "color:red;" >❌ Something went wrong.Please try again.</ p >
+}
+else
+    {
+    < div style = "max-width:400px;" >
+        < div style = "margin-bottom:16px;" >
+            < label > Customer ID:</ label >
+            < input @bind = "_customerId"
+                   style = "width:100%; padding:8px; margin-top:4px;" />
+        </ div >
+
+        < h4 > Order Summary </ h4 >
+        @foreach(var item in Cart.Items)
+        {
+            < p > @item.ProductName x @item.Quantity — €@(item.Quantity * item.UnitPrice) </ p >
+        }
+        < h3 > Total: €@Cart.Total </ h3 >
+
+        < button @onclick = "PlaceOrder"
+                style = "background:green; color:white; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; margin-top:10px;" >
+            Place Order
+        </ button >
+    </ div >
+}
+
+    @code {
+    private string _customerId = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+private bool _loading = false;
+private bool _error = false;
+private Guid? _orderId = null;
+
+private async Task PlaceOrder()
+{
+    if (!Cart.Items.Any()) return;
+
+    _loading = true;
+    _error = false;
+
+    var request = new global::Shared.DTOs.CheckoutRequest
+    {
+        CustomerId = Guid.Parse(_customerId),
+        Items = Cart.Items.ToList()
+    };
+
+    _orderId = await OrderApi.CheckoutAsync(request);
+    _loading = false;
+
+    if (_orderId.HasValue)
+        Cart.Clear();
+    else
+        _error = true;
+}
+}

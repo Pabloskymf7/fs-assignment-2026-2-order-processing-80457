@@ -1,0 +1,28 @@
+@inject CartService Cart
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">SportsStore</a>
+    </div>
+</div>
+
+<nav style="padding:10px;">
+    <ul style="list-style:none; padding:0; margin:0;">
+        <li style="margin-bottom:8px;"><a href="/">Products</a></li>
+        <li style="margin-bottom:8px;"><a href="/cart">Cart (@Cart.ItemCount)</a></li>
+        <li style="margin-bottom:8px;"><a href="/orders">My Orders</a></li>
+    </ul>
+</nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Cart.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Cart.OnChange -= StateHasChanged;
+    }
+}

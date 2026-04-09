@@ -36,6 +36,12 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
+// HTTP Client para OrderManagement.API
+builder.Services.AddHttpClient("OrderAPI", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["OrderApiUrl"] ?? "http://localhost:5250/");
+});
+
 var app = builder.Build();
 
 Log.Information("Aplicación iniciada correctamente");

@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model CartModel
 
 <h2>Your cart</h2>
@@ -47,7 +47,8 @@
 
 <div class="text-center">
     <a class="btn btn-primary" href="@Model?.ReturnUrl">Continue shopping</a>
-    <a class="btn btn-primary" asp-action="Checkout" asp-controller="Order">
+    <a class="btn btn-primary" asp-page="Checkout">
         Checkout
     </a>
 </div>
+

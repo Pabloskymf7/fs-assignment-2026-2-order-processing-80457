@@ -1,0 +1,17 @@
+@page "{orderId}"
+@model SportsStore.Pages.OrderConfirmationModel
+
+<div class="alert alert-success">
+    <h2>Order Confirmed!</h2>
+    <p>Thank you for your order. Your order has been received and is being processed.</p>
+    <p><strong>Order ID:</strong> @Model.OrderId</p>
+    <p>You can track your order status below.</p>
+</div>
+
+<div class="mt-3">
+    <a class="btn btn-primary" asp-page="OrderStatus" asp-route-orderId="@Model.OrderId">
+        Track Order
+    </a>
+    <a class="btn btn-secondary ms-2" asp-page="MyOrders">My Orders</a>
+    <a class="btn btn-outline-primary ms-2" href="/">Continue Shopping</a>
+</div>

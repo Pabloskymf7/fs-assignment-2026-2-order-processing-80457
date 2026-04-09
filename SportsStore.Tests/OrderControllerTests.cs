@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using MassTransit;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using SportsStore.Controllers;
 using SportsStore.Models;
 using Xunit;
+
 namespace SportsStore.Tests
 {
     public class OrderControllerTests
@@ -13,6 +15,7 @@ namespace SportsStore.Tests
         {
             var logger = new Mock<ILogger<OrderController>>();
             var paymentService = new Mock<IPaymentService>();
+            var bus = new Mock<IPublishEndpoint>();
             paymentService.Setup(p => p.CreatePaymentIntent(It.IsAny<Cart>()))
                 .Returns(new Stripe.PaymentIntent
                 {
@@ -25,8 +28,9 @@ namespace SportsStore.Tests
                 PublishableKey = "pk_test_fake",
                 SecretKey = "sk_test_fake"
             });
-            return new OrderController(repo, cart, logger.Object, paymentService.Object, stripeSettings);
+            return new OrderController(repo, cart, logger.Object, paymentService.Object, stripeSettings, bus.Object);
         }
+
         [Fact]
         public void Cannot_Checkout_Empty_Cart()
         {
@@ -39,6 +43,7 @@ namespace SportsStore.Tests
             Assert.True(string.IsNullOrEmpty(result?.ViewName));
             Assert.False(result?.ViewData.ModelState.IsValid);
         }
+
         [Fact]
         public void Cannot_Checkout_Invalid_ShippingDetails()
         {
@@ -52,6 +57,7 @@ namespace SportsStore.Tests
             Assert.True(string.IsNullOrEmpty(result?.ViewName));
             Assert.False(result?.ViewData.ModelState.IsValid);
         }
+
         [Fact]
         public void Can_Checkout_And_Submit_Order()
         {
