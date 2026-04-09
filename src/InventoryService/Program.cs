@@ -7,6 +7,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.File("Logs/orderapi-.log", rollingInterval: RollingInterval.Day)
     .Enrich.WithProperty("ServiceName", "OrderManagement.API")
     .Enrich.WithCorrelationId()
+    .WriteTo.Seq("http://localhost:5341")
     .CreateLogger();
 
 var builder = Host.CreateApplicationBuilder(args);
