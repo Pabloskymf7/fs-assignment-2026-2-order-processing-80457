@@ -1,79 +1,86 @@
-# SportsStore – ASP.NET Core (.NET 10)
-Pablo Miguel Ferrer-80457
-Finished 25/02/2026
+# SportsStore — Distributed Order Processing
 
-I created the branch **pmf-upgrade-john-suggestions-05032026** after finishing the project to add the requirements that John sent us by email on 05/03/2026, but the project was actually completed on 25/02/2026.
+This started as the standard SportsStore MVC app from the Pro ASP.NET Core textbook. The task was to extend it into something that actually resembles how real e-commerce platforms handle orders — separate services, async messaging, the whole thing.
 
-## Upgrade Steps
+## What it does
 
-1. Changed TargetFramework to net10.0 in both SportsStore.csproj and SportsStore.Tests.csproj.
+When a customer checks out on the SportsStore front-end, instead of just saving an order to a database, the system kicks off a chain of events:
 
-2. Updated all NuGet packages to versions compatible with .NET 10. In the main project: EF Core, Identity, SqlClient and System.Drawing.Common. In the test project: xunit, Moq, coverlet, the test SDK, SqlClient and System.Drawing.Common.
+1. The checkout hits the Order API, which saves the order and fires an event to RabbitMQ
+2. The Inventory Service picks that up, checks if stock is available, and responds
+3. If inventory is confirmed, the Payment Service processes the payment
+4. If payment goes through, the Shipping Service creates a shipment with a tracking reference
+5. The order ends up as Completed — or Failed at whatever step went wrong
 
-3. Synchronised package versions between projects. Since the test project references the main project, NuGet resolves all dependencies together. If one project requested a different version of the same package, a downgrade error occurred. The fix was to declare the same highest version explicitly in both projects.
+The whole thing is observable through Seq (structured logs from every service) and manageable through a React admin dashboard.
 
-4. Updated test method calls. The HomeController.Index method signature changed to accept a category and a page number. Tests that called Index(2) were updated to Index(null, 2).
+## Services
 
-5. Registered Cart as a session service in Program.cs using AddSession(), AddScoped and UseSession().
+| Service | What it does | Port |
+|---------|-------------|------|
+| SportsStore | Customer-facing shop (Razor Pages) | 5000 |
+| OrderManagement.API | Central API, owns the order state | 5250 |
+| InventoryService | Validates stock availability | — |
+| PaymentService | Simulates payment processing | — |
+| ShippingService | Creates shipments, generates tracking refs | — |
+| Admin Dashboard | React UI for order management | 3000 |
+| RabbitMQ | Message broker | 5672 / 15672 |
+| Seq | Log aggregation | 5341 |
 
-## Stripe Configuration
+## Running it
 
-Stripe is integrated using the official Stripe.net SDK.
+The easy way (Docker):
 
-API keys are never stored in code or appsettings.json. They are stored using .NET User Secrets. To set them up, right-click the SportsStore project in Visual Studio and click Manage User Secrets, then add:
+    docker-compose up --build
 
-{
-  "Stripe:SecretKey": "sk_test_...",
-  "Stripe:PublishableKey": "pk_test_..."
-}
+For development (Visual Studio + separate React terminal), make sure RabbitMQ is running first:
 
-Payment flow:
-- User fills in shipping details and submits checkout
-- A PaymentIntent is created server-side
-- User enters card details in the Stripe card element
-- On success the server verifies the payment and saves the order
-- User is redirected to the confirmation page
-- Failed or cancelled payments redirect to dedicated error pages
+    docker start rabbitmq
 
-Test cards:
-- 4242 4242 4242 4242 - payment succeeds
-- 4000 0000 0000 0002 - payment declined
-Use any future expiry date and any 3-digit CVC.
+Then F5 in Visual Studio with multiple startup projects: OrderManagement.API, InventoryService, PaymentService, ShippingService, SportsStore.
 
-## Logging Setup
+And in a separate terminal:
 
-Logging uses Serilog configured via appsettings.json.
+    cd src/admin-dashboard
+    npm start
 
-Logs are written to the console, to a daily rolling file in the Logs/ folder, and optionally to Seq at http://localhost:5341.
+## API
 
-Log levels by environment:
-- Development: Debug minimum
-- Production: Warning minimum
+    POST   /api/orders/checkout          Place a new order
+    GET    /api/orders                   List all orders
+    GET    /api/orders/{id}              Get order by ID
+    GET    /api/orders/{id}/status       Get just the status
+    GET    /api/orders/filter/{status}   Filter by status
+    GET    /api/orders/dashboard/summary Stats for the dashboard
+    GET    /api/customers/{id}/orders    Orders for a specific customer
+    DELETE /api/orders/{id}              Cancel an order
 
-What gets logged:
-- Application startup
-- Every HTTP request with method, path, status code and duration
-- Checkout attempted with empty cart
-- Payment intent created
-- Order created with order ID, customer name and city
-- Payment cancelled or failed
-- Any unhandled exception with full stack trace
+## Tech decisions worth noting
 
-All logs use structured properties like {OrderId} and {CustomerName} instead of string concatenation.
+SQLite instead of SQL Server — keeps Docker setup simple, no separate DB container needed.
 
-## How to Run Locally
+MassTransit 8.2.3 — newer versions require a commercial license, this one does not.
 
-Requirements:
-- .NET 10 SDK
-- SQL Server LocalDB (included with Visual Studio)
-- A free Stripe account with test keys
+AutoMapper 12.0.1 — pinned because 13.x broke the Extensions package compatibility.
 
-Steps:
-1. Clone the repository
-2. Open the solution in Visual Studio
-3. Right-click SportsStore and click Manage User Secrets, then add your Stripe test keys
-4. Open the terminal, go to the SportsStore folder and run:
-   dotnet ef database update --context StoreDbContext
-   dotnet ef database update --context AppIdentityDbContext
-5. Press F5 to run the application
-6. To run the tests, right-click the test project and click Run Tests
+Separate consumer classes per message type — MassTransit only creates a queue for the first message type when you implement multiple interfaces in one class. Learned that the hard way.
+
+EnsureDeleted + EnsureCreated on startup — avoids migration conflicts during development. Not something you would do in production.
+
+## Payment simulation
+
+The PaymentService rejects about 20% of payments randomly, plus a hardcoded list of test card numbers that always fail. This is just to demonstrate the failure path works end-to-end.
+
+## Logs
+
+Every service writes structured logs to Seq at http://localhost:5341. Useful filters:
+
+    OrderId = 'your-order-id-here'    -- Follow a specific order
+    EventType = 'PaymentRejected'     -- See all payment failures
+    @Level = 'Error'                  -- See what is breaking
+
+## Tests
+
+37 tests covering the CQRS handlers, query handlers, and RabbitMQ consumers. Run with:
+
+    dotnet test
